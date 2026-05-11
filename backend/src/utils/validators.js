@@ -5,6 +5,16 @@ const isValidUuid = (value) => {
   return uuidRegex.test(value);
 };
 
+const isPdfMimeType = (mimeType) => {
+  return mimeType === "application/pdf";
+};
+
+const isPositiveInteger = (value) => {
+  return Number.isInteger(value) && value > 0;
+};
+
 module.exports = {
   isValidUuid,
+  isPdfMimeType,
+  isPositiveInteger,
 };

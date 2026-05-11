@@ -8,7 +8,6 @@
     "db:test": "node src/config/testDbConnection.js",
     "session:test-create": "node src/modules/session/testCreateSession.js"
 
-
   },
   "keywords": [],
   "author": "",
