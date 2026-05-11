@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "db:test": "node src/config/testDbConnection.js"
+    "db:test": "node src/config/testDbConnection.js",
+    "session:test-create": "node src/modules/session/testCreateSession.js"
+
 
   },
   "keywords": [],
