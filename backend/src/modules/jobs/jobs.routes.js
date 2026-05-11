@@ -8,9 +8,21 @@ const {
   isPositiveInteger,
 } = require("../../utils/validators");
 const { findSessionById } = require("../session/session.model");
-const { createJob } = require("./jobs.model");
+const { createJob, getActiveQueueJobs } = require("./jobs.model");
 
 const router = express.Router();
+
+router.get("/", async (req, res, next) => {
+  try {
+    const jobs = await getActiveQueueJobs();
+
+    return sendSuccess(res, 200, "Queue fetched successfully", {
+      jobs,
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
 
 router.post("/", async (req, res, next) => {
   try {

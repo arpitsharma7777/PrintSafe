@@ -40,6 +40,32 @@ const createJob = async ({
   return result.rows[0];
 };
 
+const getActiveQueueJobs = async () => {
+  const query = `
+    SELECT
+      jobs.id,
+      jobs.session_id,
+      jobs.original_filename,
+      jobs.storage_key,
+      jobs.mime_type,
+      jobs.file_size_bytes,
+      jobs.status,
+      jobs.created_at,
+      sessions.expires_at AS session_expires_at
+    FROM jobs
+    INNER JOIN sessions
+      ON jobs.session_id = sessions.id
+    WHERE jobs.status IN ('PENDING', 'PRINTING')
+      AND sessions.expires_at > NOW()
+    ORDER BY jobs.created_at ASC;
+  `;
+
+  const result = await pool.query(query);
+
+  return result.rows;
+};
+
 module.exports = {
   createJob,
+  getActiveQueueJobs,
 };
