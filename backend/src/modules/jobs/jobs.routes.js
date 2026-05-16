@@ -11,15 +11,14 @@ const { findSessionById } = require("../session/session.model");
 const {
   createJob,
   getActiveQueueJobs,
-  markJobPrinted,
   markJobDeleted,
 } = require("./jobs.model");
 
 const {
   emitJobCreated,
-  emitJobPrinted,
   emitJobDeleted,
 } = require("../../socket/jobSocket");
+const { printJobController } = require("./jobs.controller");
 
 const router = express.Router();
 
@@ -90,29 +89,7 @@ router.post("/", async (req, res, next) => {
   }
 });
 
-router.patch("/:jobId/print", async (req, res, next) => {
-  try {
-    const { jobId } = req.params;
-
-    if (!isValidUuid(jobId)) {
-      throw new AppError("Invalid job ID format", 400);
-    }
-
-    const job = await markJobPrinted(jobId);
-
-    if (!job) {
-      throw new AppError("Job not found or cannot be marked as printed", 404);
-    }
-
-    emitJobPrinted(job);
-
-    return sendSuccess(res, 200, "Job marked as printed successfully", {
-      job,
-    });
-  } catch (error) {
-    return next(error);
-  }
-});
+router.patch("/:jobId/print", printJobController);
 
 router.patch("/:jobId/delete", async (req, res, next) => {
   try {
