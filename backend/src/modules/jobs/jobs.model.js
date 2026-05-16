@@ -65,7 +65,62 @@ const getActiveQueueJobs = async () => {
   return result.rows;
 };
 
+const markJobPrinted = async (jobId) => {
+  const query = `
+    UPDATE jobs
+    SET
+      status = 'PRINTED',
+      printed_at = NOW(),
+      updated_at = NOW()
+    WHERE id = $1
+      AND status IN ('PENDING', 'PRINTING')
+    RETURNING
+      id,
+      session_id,
+      original_filename,
+      storage_key,
+      mime_type,
+      file_size_bytes,
+      status,
+      printed_at,
+      created_at;
+  `;
+
+  const result = await pool.query(query, [jobId]);
+
+  return result.rows[0];
+};
+
+const markJobDeleted = async (jobId) => {
+  const query = `
+    UPDATE jobs
+    SET
+      status = 'DELETED',
+      deleted_at = NOW(),
+      updated_at = NOW()
+    WHERE id = $1
+      AND status IN ('PENDING', 'PRINTING', 'PRINTED')
+    RETURNING
+      id,
+      session_id,
+      original_filename,
+      storage_key,
+      mime_type,
+      file_size_bytes,
+      status,
+      printed_at,
+      deleted_at,
+      created_at;
+  `;
+
+  const result = await pool.query(query, [jobId]);
+
+  return result.rows[0];
+};
+
 module.exports = {
   createJob,
   getActiveQueueJobs,
+  markJobPrinted,
+  markJobDeleted,
 };

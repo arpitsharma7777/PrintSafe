@@ -6,8 +6,8 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "db:test": "node src/config/testDbConnection.js",
-    "session:test-create": "node src/modules/session/testCreateSession.js"
-
+    "session:test-create": "node src/modules/session/testCreateSession.js",
+    "socket:test-client": "node src/socket/testSocketClient.js"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +20,7 @@
     "pg": "^8.20.0",
     "redis": "^5.12.1",
     "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "uuid": "^14.0.0"
   },
   "devDependencies": {

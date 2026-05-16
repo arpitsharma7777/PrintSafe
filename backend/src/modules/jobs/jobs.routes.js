@@ -8,7 +8,8 @@ const {
   isPositiveInteger,
 } = require("../../utils/validators");
 const { findSessionById } = require("../session/session.model");
-const { createJob, getActiveQueueJobs } = require("./jobs.model");
+const { createJob, getActiveQueueJobs, markJobPrinted, markJobDeleted } = require("./jobs.model");
+const { emitJobCreated, emitJobPrinted, emitJobDeleted } = require("../../socket/jobSocket");
 
 const router = express.Router();
 
@@ -26,7 +27,7 @@ router.get("/", async (req, res, next) => {
 
 router.post("/", async (req, res, next) => {
   try {
-    const { sessionId, originalFilename, mimeType, fileSizeBytes } = req.body;
+    const { sessionId, originalFilename, mimeType, fileSizeBytes } = req.body || {};
 
     if (
       sessionId === undefined ||
@@ -61,16 +62,66 @@ router.post("/", async (req, res, next) => {
 
     const storageKey = `sessions/${sessionId}/${Date.now()}-${originalFilename}`;
 
-const job = await createJob({
-  sessionId,
-  originalFilename,
-  storageKey,
-  mimeType,
-  fileSizeBytes,
+    const job = await createJob({
+      sessionId,
+      originalFilename,
+      storageKey,
+      mimeType,
+      fileSizeBytes,
+    });
+
+    emitJobCreated(job);
+
+    return sendSuccess(res, 201, "Job created successfully", {
+      job,
+    });
+  } catch (error) {
+    return next(error);
+  }
 });
 
-return sendSuccess(res, 201, "Job created successfully", {
-  job,
+router.patch("/:jobId/print", async (req, res, next) => {
+  try {
+    const { jobId } = req.params;
+
+    if (!isValidUuid(jobId)) {
+      throw new AppError("Invalid job ID format", 400);
+    }
+
+    const job = await markJobPrinted(jobId);
+
+    if (!job) {
+      throw new AppError("Job not found or cannot be marked as printed", 404);
+    }
+
+    emitJobPrinted(job);
+
+    return sendSuccess(res, 200, "Job marked as printed successfully", {
+      job,
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.patch("/:jobId/delete", async (req, res, next) => {
+  try {
+    const { jobId } = req.params;
+
+    if (!isValidUuid(jobId)) {
+      throw new AppError("Invalid job ID format", 400);
+    }
+
+    const job = await markJobDeleted(jobId);
+
+    if (!job) {
+      throw new AppError("Job not found or cannot be marked as deleted", 404);
+    }
+
+    emitJobDeleted(job);
+
+    return sendSuccess(res, 200, "Job marked as deleted successfully", {
+      job,
     });
   } catch (error) {
     return next(error);
