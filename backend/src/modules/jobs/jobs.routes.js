@@ -8,8 +8,18 @@ const {
   isPositiveInteger,
 } = require("../../utils/validators");
 const { findSessionById } = require("../session/session.model");
-const { createJob, getActiveQueueJobs, markJobPrinted, markJobDeleted } = require("./jobs.model");
-const { emitJobCreated, emitJobPrinted, emitJobDeleted } = require("../../socket/jobSocket");
+const {
+  createJob,
+  getActiveQueueJobs,
+  markJobPrinted,
+  markJobDeleted,
+} = require("./jobs.model");
+
+const {
+  emitJobCreated,
+  emitJobPrinted,
+  emitJobDeleted,
+} = require("../../socket/jobSocket");
 
 const router = express.Router();
 
