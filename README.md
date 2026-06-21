@@ -21,7 +21,7 @@ Completed:
 - Graceful Shutdown
 
 Status:
-Backend MVP Complete
-Frontend Dashboard Pending
-Authentication Pending
-Deployment Pending
+- Backend MVP Complete
+- Frontend Dashboard Pending
+- Authentication Pending
+- Deployment Pending
