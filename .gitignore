@@ -1,3 +1,4 @@
+context/
 backend/uploads/
 node_modules/
 .env
