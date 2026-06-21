@@ -1,5 +1,8 @@
 const express = require("express");
 const cors = require("cors");
+const pinoHttp = require("pino-http");
+const logger = require("./utils/logger");
+
 const healthRoutes = require("./modules/health/health.routes");
 const notFound = require("./middleware/notFound.middleware");
 const errorHandler = require("./middleware/errorHandler.middleware");
@@ -9,6 +12,7 @@ const jobRoutes = require("./modules/jobs/jobs.routes");
 
 const app = express();
 
+app.use(pinoHttp({ logger }));
 app.use(cors());
 app.use(express.json());
 

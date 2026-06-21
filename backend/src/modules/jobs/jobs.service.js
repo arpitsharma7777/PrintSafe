@@ -2,6 +2,7 @@ const fs = require("fs/promises");
 const path = require("path");
 
 const AppError = require("../../utils/AppError");
+const logger = require("../../utils/logger");
 const { emitJobCreated, emitJobPrinted, emitJobDeleted } = require("../../socket/jobSocket");
 const { findSessionById } = require("../session/session.model");
 const { createJob, markJobDeleted } = require("./jobs.model");
@@ -30,7 +31,7 @@ const removeUploadedFile = async (filePath) => {
     await fs.unlink(filePath);
   } catch (error) {
     if (error.code !== "ENOENT") {
-      console.error("Failed to remove uploaded file:", error.message);
+      logger.error(error, "Failed to remove uploaded file", { filePath });
     }
   }
 };
