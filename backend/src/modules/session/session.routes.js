@@ -3,7 +3,7 @@ const express = require("express");
 const { sendSuccess } = require("../../utils/apiResponse");
 const AppError = require("../../utils/AppError");
 const { isValidUuid } = require("../../utils/validators");
-const { createSession, findSessionById } = require("./session.model");
+const { createSession, getSessionById } = require("./session.service");
 const { sessionRateLimiter } = require("../../middleware/rateLimit.middleware");
 
 const router = express.Router();
@@ -28,7 +28,7 @@ router.get("/:sessionId", async (req, res, next) => {
       throw new AppError("Invalid session ID format", 400);
     }
 
-    const session = await findSessionById(sessionId);
+    const session = await getSessionById(sessionId);
 
     if (!session) {
       throw new AppError("Session not found", 404);

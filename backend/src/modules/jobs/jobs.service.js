@@ -4,7 +4,7 @@ const path = require("path");
 const AppError = require("../../utils/AppError");
 const logger = require("../../utils/logger");
 const { emitJobCreated, emitJobPrinted, emitJobDeleted } = require("../../socket/jobSocket");
-const { findSessionById } = require("../session/session.model");
+const { getSessionById } = require("../session/session.service");
 const { createJob, markJobDeleted } = require("./jobs.model");
 const {
   findJobById,
@@ -43,7 +43,7 @@ const createPrintJob = async ({ sessionId, uploadedFile }) => {
   try {
     await validatePdfSignature(uploadedFile.path);
 
-    const session = await findSessionById(sessionId);
+    const session = await getSessionById(sessionId);
 
     if (!session) {
       throw new AppError("Session not found", 404);

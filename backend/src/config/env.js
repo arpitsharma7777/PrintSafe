@@ -7,6 +7,7 @@ const env = {
   sessionRateLimitMax: Number(process.env.SESSION_RATE_LIMIT_MAX) || 20,
   jobRateLimitWindowMs: Number(process.env.JOB_RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
   jobRateLimitMax: Number(process.env.JOB_RATE_LIMIT_MAX) || 10,
+  redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
 };
 
 module.exports = env;

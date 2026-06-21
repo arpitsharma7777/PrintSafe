@@ -1,4 +1,5 @@
-const { findExpiredActiveSessions, markSessionExpired } = require("../session/session.repository");
+const { findExpiredActiveSessions } = require("../session/session.repository");
+const { expireSession } = require("../session/session.service");
 const { findNonDeletedJobsBySessionId } = require("../jobs/jobs.repository");
 const { deleteJob } = require("../jobs/jobs.service");
 const logger = require("../../utils/logger");
@@ -32,10 +33,10 @@ const runSessionCleanup = async () => {
         }
       }
 
-      // 3. Mark the session as EXPIRED in the database
+      // 3. Mark the session as EXPIRED in the database and invalidate its cache
       // This is done last so if the process crashes mid-way, the session is not marked EXPIRED
       // and will be picked up on the next worker run to clean up any remaining files.
-      await markSessionExpired(session.id);
+      await expireSession(session.id);
       logger.info({ sessionId: session.id }, "Successfully marked session as EXPIRED");
     } catch (sessionError) {
       logger.error(sessionError, "Error cleaning up expired session", { sessionId: session.id });
