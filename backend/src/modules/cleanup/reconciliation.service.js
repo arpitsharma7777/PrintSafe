@@ -12,8 +12,10 @@ const logger = require("../../utils/logger");
 const reconcileOrphanFiles = async (options = {}) => {
   const minAgeMs = options.minAgeMs !== undefined ? options.minAgeMs : 5 * 60 * 1000;
   const uploadsDir = path.join(__dirname, "../../../uploads");
+  const backendRoot = path.join(uploadsDir, "../");
+  const relativeUploadsDir = path.relative(backendRoot, uploadsDir);
 
-  logger.info({ uploadsDir, minAgeMs }, "Reconciliation scan started");
+  logger.info({ uploadsDir: relativeUploadsDir, minAgeMs }, "Reconciliation scan started");
 
   let sessionDirs;
   try {
@@ -31,6 +33,7 @@ const reconcileOrphanFiles = async (options = {}) => {
 
   for (const dirEntry of sessionDirs) {
     const dirPath = path.join(uploadsDir, dirEntry.name);
+    const relativeDirPath = path.relative(backendRoot, dirPath);
 
     if (!dirEntry.isDirectory()) {
       // If there is a stray file directly in the uploads/ root, delete it if older than minAgeMs
@@ -38,10 +41,10 @@ const reconcileOrphanFiles = async (options = {}) => {
         const stats = await fs.stat(dirPath);
         if (Date.now() - stats.mtimeMs >= minAgeMs) {
           await fs.unlink(dirPath);
-          logger.info({ filePath: dirPath }, "Removed stray file in uploads root");
+          logger.info({ relativePath: relativeDirPath }, "Removed stray file in uploads root");
         }
       } catch (err) {
-        logger.error(err, "Failed to handle stray file", { filePath: dirPath });
+        logger.error(err, "Failed to handle stray file", { relativePath: relativeDirPath });
       }
       continue;
     }
@@ -54,10 +57,10 @@ const reconcileOrphanFiles = async (options = {}) => {
         const stats = await fs.stat(dirPath);
         if (Date.now() - stats.mtimeMs >= minAgeMs) {
           await fs.rm(dirPath, { recursive: true, force: true });
-          logger.info({ dirPath }, "Removed invalid directory (non-UUID)");
+          logger.info({ relativePath: relativeDirPath }, "Removed invalid directory (non-UUID)");
         }
       } catch (err) {
-        logger.error(err, "Failed to remove invalid directory", { dirPath });
+        logger.error(err, "Failed to remove invalid directory", { relativePath: relativeDirPath });
       }
       continue;
     }
@@ -67,7 +70,7 @@ const reconcileOrphanFiles = async (options = {}) => {
     try {
       files = await fs.readdir(dirPath, { withFileTypes: true });
     } catch (err) {
-      logger.error(err, "Failed to read session directory", { dirPath });
+      logger.error(err, "Failed to read session directory", { relativePath: relativeDirPath });
       continue;
     }
 
@@ -75,14 +78,15 @@ const reconcileOrphanFiles = async (options = {}) => {
 
     for (const fileEntry of files) {
       const filePath = path.join(dirPath, fileEntry.name);
+      const relativeFilePath = path.relative(backendRoot, filePath);
 
       if (fileEntry.isDirectory()) {
         // Nested directories are not supported, delete them
         try {
           await fs.rm(filePath, { recursive: true, force: true });
-          logger.info({ filePath }, "Removed unsupported nested directory");
+          logger.info({ relativePath: relativeFilePath }, "Removed unsupported nested directory");
         } catch (err) {
-          logger.error(err, "Failed to remove nested directory", { filePath });
+          logger.error(err, "Failed to remove nested directory", { relativePath: relativeFilePath });
         }
         continue;
       }
@@ -103,7 +107,7 @@ const reconcileOrphanFiles = async (options = {}) => {
           storageKey: `sessions/${sessionId}/${fileEntry.name}`,
         });
       } catch (err) {
-        logger.error(err, "Failed to get file stats", { filePath });
+        logger.error(err, "Failed to get file stats", { relativePath: relativeFilePath });
       }
     }
   }
@@ -169,10 +173,10 @@ const reconcileOrphanFiles = async (options = {}) => {
     if (isOrphan) {
       try {
         await fs.unlink(file.filePath);
-        logger.info({ filePath: file.filePath, reason }, "Deleted orphaned file");
+        logger.info({ relativePath: path.relative(backendRoot, file.filePath), reason }, "Deleted orphaned file");
       } catch (err) {
         if (err.code !== "ENOENT") {
-          logger.error(err, "Failed to delete orphaned file", { filePath: file.filePath });
+          logger.error(err, "Failed to delete orphaned file", { relativePath: path.relative(backendRoot, file.filePath) });
         }
       }
     }
@@ -181,15 +185,16 @@ const reconcileOrphanFiles = async (options = {}) => {
   // Clean up empty session folders
   for (const sessionId of sessionIdsArray) {
     const dirPath = path.join(uploadsDir, sessionId);
+    const relativeDirPath = path.relative(backendRoot, dirPath);
     try {
       const files = await fs.readdir(dirPath);
       if (files.length === 0) {
         await fs.rm(dirPath, { recursive: true, force: true });
-        logger.info({ dirPath }, "Removed empty session directory");
+        logger.info({ relativePath: relativeDirPath }, "Removed empty session directory");
       }
     } catch (err) {
       if (err.code !== "ENOENT") {
-        logger.error(err, "Failed to check/remove empty folder", { dirPath });
+        logger.error(err, "Failed to check/remove empty folder", { relativePath: relativeDirPath });
       }
     }
   }

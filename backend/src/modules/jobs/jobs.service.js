@@ -31,7 +31,8 @@ const removeUploadedFile = async (filePath) => {
     await fs.unlink(filePath);
   } catch (error) {
     if (error.code !== "ENOENT") {
-      logger.error(error, "Failed to remove uploaded file", { filePath });
+      const relativePath = path.relative(path.join(__dirname, "../../../"), filePath);
+      logger.error(error, "Failed to remove uploaded file", { relativePath });
     }
   }
 };
