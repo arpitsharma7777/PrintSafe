@@ -52,7 +52,29 @@ const markPendingJobPrinted = async (jobId) => {
   return result.rows[0] || null;
 };
 
+const findNonDeletedJobsBySessionId = async (sessionId) => {
+  const query = `
+    SELECT
+      id,
+      session_id,
+      original_filename,
+      storage_key,
+      mime_type,
+      file_size_bytes,
+      status,
+      created_at
+    FROM jobs
+    WHERE session_id = $1
+      AND status IN ('PENDING', 'PRINTING', 'PRINTED');
+  `;
+
+  const result = await pool.query(query, [sessionId]);
+
+  return result.rows;
+};
+
 module.exports = {
   findJobById,
   markPendingJobPrinted,
+  findNonDeletedJobsBySessionId,
 };

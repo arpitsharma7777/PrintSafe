@@ -4,10 +4,11 @@ const { sendSuccess } = require("../../utils/apiResponse");
 const AppError = require("../../utils/AppError");
 const { isValidUuid } = require("../../utils/validators");
 const { createSession, findSessionById } = require("./session.model");
+const { sessionRateLimiter } = require("../../middleware/rateLimit.middleware");
 
 const router = express.Router();
 
-router.post("/", async (req, res, next) => {
+router.post("/", sessionRateLimiter, async (req, res, next) => {
   try {
     const session = await createSession();
 

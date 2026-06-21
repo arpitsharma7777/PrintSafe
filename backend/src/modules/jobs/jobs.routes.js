@@ -1,24 +1,15 @@
 const express = require("express");
-
+const { handlePdfUpload } = require("../../middleware/upload.middleware");
 const { sendSuccess } = require("../../utils/apiResponse");
 const AppError = require("../../utils/AppError");
+const { isValidUuid } = require("../../utils/validators");
 const {
-  isValidUuid,
-  isPdfMimeType,
-  isPositiveInteger,
-} = require("../../utils/validators");
-const { findSessionById } = require("../session/session.model");
-const {
-  createJob,
   getActiveQueueJobs,
-  markJobDeleted,
 } = require("./jobs.model");
 
-const {
-  emitJobCreated,
-  emitJobDeleted,
-} = require("../../socket/jobSocket");
-const { printJobController } = require("./jobs.controller");
+const { printJobController, deleteJobController } = require("./jobs.controller");
+const { createPrintJob } = require("./jobs.service");
+const { jobRateLimiter } = require("../../middleware/rateLimit.middleware");
 
 const router = express.Router();
 
@@ -34,52 +25,27 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-router.post("/", async (req, res, next) => {
+router.post("/", jobRateLimiter, handlePdfUpload, async (req, res, next) => {
   try {
-    const { sessionId, originalFilename, mimeType, fileSizeBytes } = req.body || {};
+    const { sessionId } = req.body || {};
+    const uploadedFile = req.file;
 
-    if (
-      sessionId === undefined ||
-      originalFilename === undefined ||
-      mimeType === undefined ||
-      fileSizeBytes === undefined
-    ) {
-      throw new AppError("Missing required job fields", 400);
+    if (sessionId === undefined) {
+      throw new AppError("Missing required session ID", 400);
     }
 
     if (!isValidUuid(sessionId)) {
       throw new AppError("Invalid session ID format", 400);
     }
 
-    if (!isPdfMimeType(mimeType)) {
-      throw new AppError("Invalid file type. Only PDF files are allowed.", 400);
+    if (!uploadedFile) {
+      throw new AppError("PDF file is required", 400);
     }
 
-    if (!isPositiveInteger(fileSizeBytes)) {
-      throw new AppError("Invalid file size. Please upload a valid file.", 400);
-    }
-
-    const session = await findSessionById(sessionId);
-
-    if (!session) {
-      throw new AppError("Session not found", 404);
-    }
-
-    if (new Date(session.expires_at) < new Date()) {
-      throw new AppError("Session has expired", 410);
-    }
-
-    const storageKey = `sessions/${sessionId}/${Date.now()}-${originalFilename}`;
-
-    const job = await createJob({
+    const job = await createPrintJob({
       sessionId,
-      originalFilename,
-      storageKey,
-      mimeType,
-      fileSizeBytes,
+      uploadedFile,
     });
-
-    emitJobCreated(job);
 
     return sendSuccess(res, 201, "Job created successfully", {
       job,
@@ -91,28 +57,6 @@ router.post("/", async (req, res, next) => {
 
 router.patch("/:jobId/print", printJobController);
 
-router.patch("/:jobId/delete", async (req, res, next) => {
-  try {
-    const { jobId } = req.params;
-
-    if (!isValidUuid(jobId)) {
-      throw new AppError("Invalid job ID format", 400);
-    }
-
-    const job = await markJobDeleted(jobId);
-
-    if (!job) {
-      throw new AppError("Job not found or cannot be marked as deleted", 404);
-    }
-
-    emitJobDeleted(job);
-
-    return sendSuccess(res, 200, "Job marked as deleted successfully", {
-      job,
-    });
-  } catch (error) {
-    return next(error);
-  }
-});
+router.patch("/:jobId/delete", deleteJobController);
 
 module.exports = router;
